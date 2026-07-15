@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOOTUP — Give Your Phone a Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Baloo+2:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — Y2K console palette. Deep grape/ink base, LCD-lime
+   readouts, chrome hardware panels. No cream/terracotta, no
+   pure-black+one-neon — this leans "graphing calculator meets
+   Tamagotchi meets late-90s software box art."
+   ============================================================ */
+:root{
+  --ink:#170B2A;
+  --ink-2:#0E0619;
+  --paper:#F3ECFF;
+  --panel:#241242;
+  --panel-2:#2E1856;
+  --chrome:#D9DEE8;
+  --chrome-dk:#9AA3B4;
+  --lcd:#B9FF6B;
+  --lcd-dim:#3E5A22;
+  --zap:#FFD400;
+  --bubble:#FF4FD8;
+  --cyber:#34E6E0;
+  --grape:#8A5CFF;
+  --line:#0E0619;
+  --pip:6px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Baloo 2', sans-serif;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--zap); color:var(--ink); }
+h1,h2,h3,.display{ font-family:'Press Start 2P', monospace; line-height:1.5; letter-spacing:0.01em; }
+.mono{ font-family:'Space Mono', monospace; letter-spacing:0.01em; }
+a{ color:inherit; text-decoration:none; }
+img,svg{ max-width:100%; display:block; }
+.wrap{ max-width:1220px; margin:0 auto; padding:0 32px; }
+button{ font-family:inherit; }
+
+/* ---------- pixel/chunk utilities ---------- */
+.chunk{ border:3px solid var(--line); }
+.chunk-shadow{ box-shadow:7px 7px 0 var(--line); }
+.chunk-shadow-sm{ box-shadow:4px 4px 0 var(--line); }
+.notch{
+  clip-path:polygon(0 10px,10px 10px,10px 0,calc(100% - 10px) 0,calc(100% - 10px) 10px,100% 10px,100% calc(100% - 10px),calc(100% - 10px) calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,10px calc(100% - 10px),0 calc(100% - 10px));
+}
+.btn{
+  font-family:'Space Mono', monospace; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em;
+  padding:14px 22px; cursor:pointer; border:3px solid var(--line);
+  display:inline-flex; align-items:center; gap:8px; transition:transform .08s;
+  background:var(--chrome); color:var(--ink);
+}
+.btn-zap{ background:var(--zap); box-shadow:6px 6px 0 var(--line); }
+.btn-lcd{ background:var(--lcd); box-shadow:6px 6px 0 var(--line); }
+.btn-ghost{ background:transparent; color:var(--paper); border-color:rgba(243,236,255,0.45); }
+.btn:active{ transform:translate(4px,4px); box-shadow:0 0 0 var(--line) !important; }
+
+/* ---------- LCD readout, the signature element ---------- */
+.lcd{
+  background:#0F2B0A; border:3px solid var(--line);
+  color:var(--lcd); font-family:'Space Mono', monospace;
+  padding:14px 16px; position:relative;
+  box-shadow:inset 0 0 0 2px #1C3F14;
+}
+.lcd::before{
+  content:""; position:absolute; inset:0;
+  background:repeating-linear-gradient(180deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px);
+  pointer-events:none;
+}
+.lcd .dim{ color:var(--lcd-dim); }
+
+/* ---------- nav ---------- */
+.nav{
+  position:sticky; top:0; z-index:500;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 32px; background:rgba(243,236,255,0.92); backdrop-filter:blur(8px);
+  border-bottom:3px solid var(--line);
+}
+.brand{ display:flex; align-items:center; gap:10px; font-family:'Press Start 2P'; font-size:13px; }
+.brand canvas{ image-rendering:pixelated; width:26px; height:26px; }
+.navlinks{ display:flex; gap:26px; font-family:'Space Mono'; font-size:12px; font-weight:700; text-transform:uppercase; }
+.navlinks a{ opacity:0.68; transition:opacity .2s; }
+.navlinks a:hover{ opacity:1; color:var(--bubble); }
+@media (max-width:900px){ .navlinks{ display:none; } }
+
+/* ---------- marquee ---------- */
+.marquee-wrap{ background:var(--ink); border-bottom:3px solid var(--line); overflow:hidden; white-space:nowrap; }
+.marquee{ display:inline-block; padding:9px 0; animation:scroll-left 26s linear infinite; }
+.marquee span{ font-family:'Space Mono'; font-size:12px; font-weight:700; color:var(--zap); text-transform:uppercase; letter-spacing:0.06em; padding:0 22px; }
+@keyframes scroll-left{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative; color:var(--paper); padding:60px 32px 0; overflow:hidden;
+  background:
+    radial-gradient(ellipse 60% 45% at 12% 8%, rgba(138,92,255,0.4), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(255,79,216,0.28), transparent 60%),
+    linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+}
+.hero-dots{
+  position:absolute; inset:0; opacity:0.45;
+  background-image:radial-gradient(rgba(255,255,255,0.16) 1.4px, transparent 1.4px);
+  background-size:24px 24px;
+  mask-image:radial-gradient(ellipse 75% 55% at 50% 15%, black 15%, transparent 72%);
+}
+.hero-inner{
+  position:relative; z-index:2; max-width:1220px; margin:0 auto; width:100%;
+  display:grid; grid-template-columns:1.05fr 0.95fr; align-items:center; gap:34px; padding-bottom:56px;
+}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:9px; font-family:'Press Start 2P'; font-size:9.5px;
+  color:var(--ink); background:var(--zap); padding:9px 12px; width:fit-content; margin-bottom:22px; border:3px solid var(--line);
+}
+.eyebrow .blip{ width:7px; height:7px; background:var(--bubble); animation:pulse 1.3s steps(2) infinite; }
+@keyframes pulse{ 0%,49%{opacity:1;} 50%,100%{opacity:0.15;} }
+.hero h1{ font-size:clamp(26px, 3.6vw, 42px); margin-bottom:20px; }
+.hero h1 .hl{ color:var(--cyber); }
+.hero h1 .hl2{ color:var(--bubble); }
+.hero p.lede{ font-family:'Baloo 2'; font-weight:700; font-size:17px; line-height:1.65; color:rgba(243,236,255,0.8); max-width:460px; margin-bottom:28px; }
+.hero-ctas{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:34px; }
+.hero-stats{ display:flex; gap:30px; }
+.hero-stats div{ display:flex; flex-direction:column; gap:4px; }
+.hero-stats .num{ font-family:'Press Start 2P'; font-size:16px; color:#fff; }
+.hero-stats .lbl{ font-family:'Space Mono'; font-size:10px; color:rgba(243,236,255,0.5); text-transform:uppercase; letter-spacing:0.05em; }
+
+.hero-stage{ background:var(--panel); border:3px solid var(--line); box-shadow:8px 8px 0 rgba(0,0,0,0.4); padding:24px; position:relative; min-height:460px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+.stage-label{ position:absolute; top:14px; left:16px; font-family:'Space Mono'; font-size:10px; color:rgba(243,236,255,0.45); text-transform:uppercase; letter-spacing:0.08em; }
+.stage-label.right{ left:auto; right:16px; }
+
+/* phone mockup */
+.phone{ width:172px; height:340px; background:#0B0616; border:3px solid var(--line); padding:14px 10px; position:relative; flex-shrink:0; }
+.phone-notch{ width:38px; height:6px; background:var(--line); margin:0 auto 8px; }
+.phone-screen-label{ font-family:'Space Mono'; font-size:8px; color:rgba(243,236,255,0.4); text-align:center; margin-bottom:8px; text-transform:uppercase; }
+.phone-hero-canvas{ width:100%; height:210px; background:linear-gradient(180deg,#1B0E30,#0B0616); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.phone-hero-canvas canvas{ image-rendering:pixelated; width:96px; height:96px; }
+.phone-status{ font-family:'Space Mono'; font-size:9px; color:var(--lcd); text-align:center; text-transform:uppercase; letter-spacing:0.05em; }
+.species-picker{ display:flex; gap:8px; }
+.species-btn{ width:38px; height:38px; background:var(--ink-2); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .1s; }
+.species-btn:hover{ transform:translateY(-2px); }
+.species-btn.active{ background:var(--zap); }
+.species-btn canvas{ width:20px; height:20px; image-rendering:pixelated; }
+
+/* ---------- section shell ---------- */
+section{ padding:88px 0; }
+.kicker{ font-family:'Space Mono'; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--bubble); margin-bottom:12px; }
+.sec-head{ max-width:640px; margin-bottom:48px; }
+.sec-head h2{ font-size:clamp(20px,2.6vw,30px); margin-bottom:14px; }
+.sec-head p{ font-family:'Baloo 2'; font-weight:600; font-size:16px; line-height:1.6; color:var(--ink); opacity:0.75; }
+
+/* ---------- software showcase ---------- */
+.soft-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:26px; }
+.soft-card{ background:var(--paper); }
+.soft-frame{ background:#0B0616; border:3px solid var(--line); box-shadow:6px 6px 0 var(--line); padding:16px 14px; margin-bottom:16px; }
+.soft-frame .top{ display:flex; gap:5px; margin-bottom:12px; }
+.soft-frame .dot{ width:8px; height:8px; border:2px solid var(--line); }
+.soft-frame .screen{ min-height:220px; background:linear-gradient(180deg,#1B0E30,#0B0616); border:2px solid var(--line); padding:12px; display:flex; flex-direction:column; gap:8px; }
+.soft-card h3{ font-family:'Press Start 2P'; font-size:12px; margin-bottom:8px; }
+.soft-card p{ font-family:'Baloo 2'; font-weight:600; font-size:14px; line-height:1.55; opacity:0.75; }
+.mini-icon-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.mini-icon{ aspect-ratio:1; border:2px solid var(--line); }
+.mini-icon:nth-child(1){background:var(--cyber);} .mini-icon:nth-child(2){background:var(--bubble);} .mini-icon:nth-child(3){background:var(--zap);}
+.mini-icon:nth-child(4){background:var(--lcd);} .mini-icon:nth-child(5){background:var(--grape);} .mini-icon:nth-child(6){background:var(--bubble);}
+.mini-icon:nth-child(7){background:var(--zap);} .mini-icon:nth-child(8){background:var(--cyber);} .mini-icon:nth-child(9){background:var(--lcd);}
+.charm-shop-row{ display:flex; gap:8px; }
+.charm-shop-row .chip{ flex:1; aspect-ratio:1; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Space Mono'; font-size:9px; color:var(--paper); }
+.chip.a{background:var(--grape);} .chip.b{background:var(--bubble);} .chip.c{background:var(--cyber);}
+.mood-bar{ height:14px; border:2px solid var(--line); background:var(--ink-2); position:relative; overflow:hidden; }
+.mood-bar span{ display:block; height:100%; background:var(--lcd); }
+.soft-caption{ font-family:'Space Mono'; font-size:9px; color:rgba(243,236,255,0.5); text-transform:uppercase; }
+
+/* ---------- pals gallery ---------- */
+.pals-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+.pal-card{ background:var(--panel); color:var(--paper); border:3px solid var(--line); box-shadow:6px 6px 0 var(--line); padding:20px 16px; text-align:center; }
+.pal-card canvas{ width:64px; height:64px; image-rendering:pixelated; margin:0 auto 12px; }
+.pal-card h4{ font-family:'Press Start 2P'; font-size:11px; margin-bottom:8px; }
+.pal-card p{ font-family:'Space Mono'; font-size:10.5px; opacity:0.65; text-transform:uppercase; }
+
+/* ---------- HARDWARE LAB ---------- */
+.lab-shell{ background:var(--ink); color:var(--paper); }
+.lab-shell .kicker{ color:var(--cyber); }
+.lab-tabs{ display:flex; gap:0; border:3px solid var(--line); width:fit-content; margin-bottom:30px; }
+.lab-tab{ font-family:'Space Mono'; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; padding:13px 20px; cursor:pointer; background:var(--panel); color:var(--paper); border-right:3px solid var(--line); }
+.lab-tab:last-child{ border-right:none; }
+.lab-tab.active{ background:var(--zap); color:var(--ink); }
+.lab-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:30px; align-items:start; }
+.lab-panel{ display:none; }
+.lab-panel.active{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:30px; align-items:start; }
+.diagram-shell{ background:var(--panel); border:3px solid var(--line); box-shadow:7px 7px 0 rgba(0,0,0,0.35); padding:18px; }
+.diagram-shell svg{ width:100%; height:auto; display:block; }
+.part-hot{ cursor:pointer; transition:filter .12s; }
+.part-hot:hover, .part-hot.hot{ filter:brightness(1.35); }
+.leader{ stroke:var(--chrome-dk); stroke-width:1.5; stroke-dasharray:3 3; }
+.part-label-bg{ fill:var(--ink-2); stroke:var(--chrome-dk); stroke-width:1.5; }
+.part-label-txt{ font-family:'Space Mono',monospace; font-size:10.5px; fill:var(--paper); }
+.part-label-cost{ font-family:'Space Mono',monospace; font-size:10px; fill:var(--lcd); }
+
+.ledger{ background:var(--panel); border:3px solid var(--line); box-shadow:7px 7px 0 rgba(0,0,0,0.35); }
+.ledger-head{ padding:14px 18px; border-bottom:3px solid var(--line); font-family:'Press Start 2P'; font-size:11px; background:var(--panel-2); }
+.ledger table{ width:100%; border-collapse:collapse; }
+.ledger td{ font-family:'Space Mono'; font-size:12px; padding:9px 18px; border-bottom:1px solid rgba(217,222,232,0.14); }
+.ledger tr.part-row{ cursor:pointer; transition:background .12s; }
+.ledger tr.part-row:hover, .ledger tr.part-row.hot{ background:rgba(255,212,0,0.1); }
+.ledger td.cost{ text-align:right; color:var(--chrome); }
+.ledger tr.sub td{ font-weight:700; border-top:2px solid var(--line); border-bottom:none; padding-top:12px; }
+.ledger-readout{ margin:16px 18px 18px; }
+.readout-row{ display:flex; justify-content:space-between; font-size:12px; padding:4px 0; }
+.readout-row.total{ font-size:15px; margin-top:8px; padding-top:10px; border-top:1px solid var(--lcd-dim); }
+.readout-row .lab{ text-transform:uppercase; opacity:0.8; }
+.margin-bar{ height:16px; border:2px solid var(--lcd-dim); margin-top:10px; position:relative; overflow:hidden; background:#0A1E06; }
+.margin-bar span{ display:block; height:100%; background:var(--lcd); }
+@media (max-width:960px){
+  .lab-panel.active{ grid-template-columns:1fr; }
+  .soft-grid{ grid-template-columns:1fr; }
+  .pals-row{ grid-template-columns:repeat(2,1fr); }
+  .hero-inner{ grid-template-columns:1fr; }
+}
+
+/* ---------- pairing demo ---------- */
+.pair-demo{ margin-top:22px; background:var(--ink-2); border:3px solid var(--line); padding:16px; }
+.pair-demo .lcd{ min-height:64px; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+.pair-btn{ margin-top:12px; width:100%; justify-content:center; }
+
+/* ---------- pricing ---------- */
+.price-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+.price-card{ background:var(--paper); border:3px solid var(--line); box-shadow:7px 7px 0 var(--line); padding:26px; display:flex; flex-direction:column; gap:14px; }
+.price-card.feat{ background:var(--zap); }
+.price-card .amt{ font-family:'Press Start 2P'; font-size:24px; }
+.price-card .amt span{ font-family:'Space Mono'; font-size:11px; font-weight:700; opacity:0.6; }
+.price-card ul{ list-style:none; display:flex; flex-direction:column; gap:8px; font-family:'Space Mono'; font-size:12px; }
+.price-card li::before{ content:"▪ "; color:var(--bubble); }
+
+/* ---------- quote strip ---------- */
+.quote-strip{ background:var(--panel); color:var(--paper); text-align:center; padding:52px 32px; border-top:3px solid var(--line); border-bottom:3px solid var(--line); }
+.quote-strip blockquote{ font-family:'Press Start 2P'; font-size:14px; max-width:760px; margin:0 auto 14px; line-height:2; }
+.quote-strip cite{ font-family:'Space Mono'; font-size:11px; opacity:0.6; text-transform:uppercase; }
+
+/* ---------- footer ---------- */
+footer{ background:var(--ink); color:var(--paper); padding:52px 32px 26px; }
+.foot-grid{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:36px; margin-bottom:36px; }
+.foot-links{ display:flex; gap:56px; }
+.foot-col h5{ font-family:'Space Mono'; font-size:11px; letter-spacing:0.08em; color:var(--cyber); margin-bottom:12px; }
+.foot-col a{ display:block; font-family:'Baloo 2'; font-weight:700; font-size:14px; opacity:0.75; margin-bottom:8px; }
+.foot-bottom{ display:flex; justify-content:space-between; font-family:'Space Mono'; font-size:10.5px; opacity:0.5; text-transform:uppercase; padding-top:18px; border-top:1px solid rgba(243,236,255,0.14); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand"><canvas data-mascot="fizz" data-static="1"></canvas>BOOTUP</div>
+  <div class="navlinks">
+    <a href="#software">App</a>
+    <a href="#pals">Pals</a>
+    <a href="#lab">Hardware Lab</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <a href="#pricing" class="btn btn-lcd" style="padding:10px 16px; font-size:11px;">Get One</a>
+</nav>
+
+<div class="marquee-wrap">
+  <div class="marquee">
+    <span>★ NOW SHIPPING — CHARM, KEYCHAIN &amp; BUD-CHARM ★ GIVE YOUR PHONE A PULSE ★ 3 SPECIES, INFINITE PALS ★ NO SUBSCRIPTION, EVER ★ FREE APP, ALWAYS ★</span>
+    <span>★ NOW SHIPPING — CHARM, KEYCHAIN &amp; BUD-CHARM ★ GIVE YOUR PHONE A PULSE ★ 3 SPECIES, INFINITE PALS ★ NO SUBSCRIPTION, EVER ★ FREE APP, ALWAYS ★</span>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="hero-dots"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow"><span class="blip"></span> BOOT.SYS LOADED — PALS ONLINE</div>
+      <h1>Your phone forgot how to be <span class="hl">fun.</span><br>We built it a <span class="hl2">pulse.</span></h1>
+      <p class="lede">BOOTUP is one free app plus a family of tiny hardware pals — a phone charm, a keychain beacon, a bud-charm for your earbuds — that clip onto your stuff and sync live. Pick a species, snap it on, watch your phone act like it missed you.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-zap">Download the App — Free</button>
+        <button class="btn btn-ghost">See the Hardware ↓</button>
+      </div>
+      <div class="hero-stats">
+        <div><span class="num">3</span><span class="lbl">Hardware forms</span></div>
+        <div><span class="num">12</span><span class="lbl">Pal species</span></div>
+        <div><span class="num">$9+</span><span class="lbl">Starting price</span></div>
+      </div>
+    </div>
+    <div class="hero-stage">
+      <div class="stage-label">LIVE PREVIEW</div>
+      <div class="stage-label right">TAP A SPECIES →</div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen-label">bootup.app</div>
+        <div class="phone-hero-canvas"><canvas id="heroMascot"></canvas></div>
+        <div class="phone-status" id="heroCaption">syncing with charm...</div>
+      </div>
+      <div class="species-picker" id="speciesPicker"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= SOFTWARE ================= -->
+<main class="wrap">
+  <section id="software">
+    <div class="kicker">01 — THE SOFTWARE</div>
+    <div class="sec-head">
+      <h2>One free app. Three things it actually does.</h2>
+      <p>BOOTUP isn't a companion app bolted onto a gadget — the app is the product, and the hardware is how you carry it around. No hardware required to start.</p>
+    </div>
+    <div class="soft-grid">
+      <div class="soft-card">
+        <div class="soft-frame">
+          <div class="top"><div class="dot" style="background:var(--bubble)"></div><div class="dot" style="background:var(--zap)"></div><div class="dot" style="background:var(--lcd)"></div></div>
+          <div class="screen">
+            <div class="mini-icon-grid" id="tidyGrid"></div>
+            <div class="soft-caption">home screen · auto-tidy on</div>
+          </div>
+        </div>
+        <h3>Auto-tidy</h3>
+        <p>Your pal quietly re-sorts your home screen by how often you actually use things — on a schedule you set, not a black box.</p>
+      </div>
+      <div class="soft-card">
+        <div class="soft-frame">
+          <div class="top"><div class="dot" style="background:var(--bubble)"></div><div class="dot" style="background:var(--zap)"></div><div class="dot" style="background:var(--lcd)"></div></div>
+          <div class="screen">
+            <div class="charm-shop-row"><div class="chip a">C1</div><div class="chip b">C2</div><div class="chip c">C3</div></div>
+            <div class="mood-bar"><span style="width:64%;"></span></div>
+            <div class="soft-caption">mood: 64% — needs a walk</div>
+          </div>
+        </div>
+        <h3>Live mood sync</h3>
+        <p>Whatever's clipped to your bag reacts to real signals — steps, screen time, do-not-disturb — and shows it on both the charm and the app.</p>
+      </div>
+      <div class="soft-card">
+        <div class="soft-frame">
+          <div class="top"><div class="dot" style="background:var(--bubble)"></div><div class="dot" style="background:var(--zap)"></div><div class="dot" style="background:var(--lcd)"></div></div>
+          <div class="screen">
+            <div class="lcd" style="font-size:10px;">
+              <div>&gt; SCANNING FOR PALS...</div>
+              <div class="dim">&gt; FOUND: CHARM-04B1</div>
+              <div>&gt; PAIRED IN 2.4s</div>
+            </div>
+          </div>
+        </div>
+        <h3>2-second pairing</h3>
+        <p>Bluetooth LE auto-detect. Open the app, hold the pal near your phone, done — no codes, no account wall.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= PALS GALLERY ================= -->
+<main class="wrap">
+  <section id="pals">
+    <div class="kicker">02 — THE PALS</div>
+    <div class="sec-head">
+      <h2>Twelve species. Same brain, different personality.</h2>
+      <p>Every pal runs the same firmware — the species just changes the palette and the idle animations. Collect across all three hardware forms.</p>
+    </div>
+    <div class="pals-row" id="palsRow"></div>
+  </section>
+</main>
+
+<!-- ================= HARDWARE LAB ================= -->
+<section id="lab" class="lab-shell">
+  <div class="wrap">
+    <div class="kicker">03 — HARDWARE LAB</div>
+    <div class="sec-head" style="color:var(--paper);">
+      <h2>Every pal, taken apart. Click a part.</h2>
+      <p style="color:rgba(243,236,255,0.75);">Three physical forms, one shared platform. Hover or tap any layer of the exploded diagram to see what it costs to build — the ledger on the right updates live and totals to the real manufacturing cost and margin.</p>
+    </div>
+
+    <div class="lab-tabs" id="labTabs"></div>
+    <div id="labPanels"></div>
+  </div>
+</section>
+
+<div class="quote-strip">
+  <blockquote>"MY KEYCHAIN HAS BETTER UPTIME THAN MY LAPTOP."</blockquote>
+  <cite>— early pal owner, three charms deep</cite>
+</div>
+
+<!-- ================= PRICING ================= -->
+<main class="wrap">
+  <section id="pricing">
+    <div class="kicker">04 — GET ONE</div>
+    <div class="sec-head">
+      <h2>Priced like a treat. Never gatekept behind a subscription.</h2>
+      <p>The app is free forever. Hardware is a one-time snap-on purchase — pick the form that fits how you carry your stuff.</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="amt">$9 <span>/ keychain beacon</span></div>
+        <ul>
+          <li>Passive LED pal, clips to any keyring</li>
+          <li>CR2032 battery — lasts ~8 months</li>
+          <li>Tap-to-check-in via NFC</li>
+        </ul>
+        <button class="btn" style="width:100%; justify-content:center;">Add Beacon</button>
+      </div>
+      <div class="price-card feat">
+        <div class="amt">$18 <span>/ phone charm</span></div>
+        <ul>
+          <li>9×9 RGB pixel-matrix display</li>
+          <li>BLE 5.3, live mood + notifications</li>
+          <li>USB-C, ~5 days battery life</li>
+        </ul>
+        <button class="btn btn-zap" style="width:100%; justify-content:center; background:var(--ink); color:var(--zap);">Add Charm</button>
+      </div>
+      <div class="price-card">
+        <div class="amt">$16 <span>/ bud-charm</span></div>
+        <ul>
+          <li>Silicone skin + magnetic charm clip</li>
+          <li>Chirps when your buds are far from your phone</li>
+          <li>Fits most earbud charging cases</li>
+        </ul>
+        <button class="btn" style="width:100%; justify-content:center;">Add Bud-Charm</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div class="brand"><canvas data-mascot="fizz" data-static="1" style="filter:none;"></canvas>BOOTUP</div>
+    <div class="foot-links">
+      <div class="foot-col"><h5>PRODUCT</h5><a href="#software">The App</a><a href="#pals">The Pals</a><a href="#lab">Hardware Lab</a></div>
+      <div class="foot-col"><h5>RESOURCES</h5><a href="#lab">Bill of materials</a><a href="#pricing">Pricing</a></div>
+      <div class="foot-col"><h5>COMPANY</h5><a href="#">About</a><a href="#">Careers</a><a href="#">Contact</a></div>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">
+    <span>© 2026 BOOTUP — CONCEPT DEMO</span>
+    <span>GIVE YOUR PHONE A PULSE</span>
+  </div>
+</footer>
+
+<script>
+/* ================= PIXEL MASCOT RENDERER ================= */
+const SPECIES = {
+  fizz:   {colors:{o:'#4a1230',b:'#FF4FD8',h:'#ffc2de',s:'#d43f85',k:'#ffe27a'}, label:'fizzing with static...'},
+  volt:   {colors:{o:'#4a3400',b:'#FFD400',h:'#fff2b0',s:'#e0a300',k:'#8A5CFF'}, label:'sparking to life...'},
+  puddle: {colors:{o:'#123246',b:'#34E6E0',h:'#b9f2ff',s:'#1690c2',k:'#FF4FD8'}, label:'cooling your phone...'},
+  sprout: {colors:{o:'#0f3d1c',b:'#B9FF6B',h:'#e4ffde',s:'#3fbf5a',k:'#FF4FD8'}, label:'keeping it fresh...'},
+  grape:  {colors:{o:'#2a0f4a',b:'#8A5CFF',h:'#dcc9ff',s:'#5f2fd4',k:'#FFD400'}, label:'buffering good vibes...'},
+  chip:   {colors:{o:'#3a2400',b:'#ffb454',h:'#ffe0b0',s:'#c47a12',k:'#34E6E0'}, label:'defragging your day...'}
+};
+const BODY_ROWS = [
+  "..ooooo..",
+  ".ohbbbso.",
+  ".opbbbpo.",
+  ".obbbbbo.",
+  ".okbbbko.",
+  "..obobo..",
+  "..ooooo.."
+];
+const TOP_ROWS = ["..o...o..", ".b.....b."];
+const BLINK_ROW4 = ".obbbbbo.";
+function drawMascot(canvas, key, blink){
+  const sp = SPECIES[key] || SPECIES.fizz;
+  const rows = [...TOP_ROWS, ...BODY_ROWS];
+  if(blink) rows[4] = BLINK_ROW4;
+  canvas.width = 9; canvas.height = 9;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,9,9);
+  rows.forEach((row,y)=>{
+    for(let x=0;x<9;x++){
+      const c = row[x];
+      if(c==='.') continue;
+      const map = {o:sp.colors.o,b:sp.colors.b,h:sp.colors.h,s:sp.colors.s,k:sp.colors.k,a:sp.colors.o};
+      ctx.fillStyle = map[c] || sp.colors.b;
+      ctx.fillRect(x,y,1,1);
+    }
+  });
+}
+document.querySelectorAll('canvas[data-mascot]').forEach(cv=>{
+  drawMascot(cv, cv.dataset.mascot, false);
+});
+
+/* hero species picker */
+const heroCanvas = document.getElementById('heroMascot');
+const heroCaption = document.getElementById('heroCaption');
+const picker = document.getElementById('speciesPicker');
+let currentSpecies = 'fizz';
+Object.keys(SPECIES).forEach(key=>{
+  const btn = document.createElement('div');
+  btn.className = 'species-btn' + (key==='fizz' ? ' active' : '');
+  const cv = document.createElement('canvas');
+  drawMascot(cv, key, false);
+  btn.appendChild(cv);
+  btn.addEventListener('click', ()=>{
+    currentSpecies = key;
+    drawMascot(heroCanvas, key, false);
+    heroCaption.textContent = SPECIES[key].label;
+    document.querySelectorAll('.species-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+  picker.appendChild(btn);
+});
+drawMascot(heroCanvas, currentSpecies, false);
+setInterval(()=>{
+  drawMascot(heroCanvas, currentSpecies, true);
+  setTimeout(()=>drawMascot(heroCanvas, currentSpecies, false), 140);
+}, 3000);
+
+/* tidy grid mini icons (just static colored squares, css handles color via nth-child) */
+const tidyGrid = document.getElementById('tidyGrid');
+for(let i=0;i<9;i++){ const d=document.createElement('div'); d.className='mini-icon'; tidyGrid.appendChild(d); }
+
+/* pals gallery */
+const palsRow = document.getElementById('palsRow');
+const SPECIES_META = {
+  fizz:{n:'Fizz', d:'Notification pal'}, volt:{n:'Volt', d:'Battery pal'},
+  puddle:{n:'Puddle', d:'Focus pal'}, sprout:{n:'Sprout', d:'Habit pal'},
+  grape:{n:'Grape', d:'Mood pal'}, chip:{n:'Chip', d:'Storage pal'}
+};
+Object.keys(SPECIES_META).forEach(key=>{
+  const card = document.createElement('div');
+  card.className = 'pal-card';
+  const cv = document.createElement('canvas');
+  card.appendChild(cv);
+  const h4 = document.createElement('h4'); h4.textContent = SPECIES_META[key].n;
+  const p = document.createElement('p'); p.textContent = SPECIES_META[key].d;
+  card.appendChild(h4); card.appendChild(p);
+  palsRow.appendChild(card);
+  drawMascot(cv, key, false);
+  setInterval(()=>{ drawMascot(cv, key, true); setTimeout(()=>drawMascot(cv,key,false),140); }, 2400+Math.random()*2000);
+});
+
+/* ================= HARDWARE LAB DATA + RENDER ================= */
+const PRODUCTS = {
+  charm: {
+    label:'Phone Charm', msrp:18.00,
+    parts:[
+      {id:'window', name:'Tinted acrylic window (shell top)', cost:0.35},
+      {id:'matrix', name:'9×9 RGB LED pixel-matrix + driver', cost:1.40},
+      {id:'pcb', name:'BLE 5.3 MCU on 2-layer PCB', cost:2.10},
+      {id:'battery', name:'LiPo battery, 40mAh', cost:0.85},
+      {id:'usbc', name:'USB-C charge port + PMIC', cost:0.55},
+      {id:'rail', name:'Magnetic snap-fit rail connector', cost:0.60},
+      {id:'gasket', name:'Silicone gasket + tactile button', cost:0.25},
+      {id:'shell', name:'ABS shell, bottom half (textured)', cost:0.60},
+      {id:'pack', name:'Retail box, manual, Pal ID card', cost:0.70},
+      {id:'labor', name:'Assembly, firmware flash &amp; QC labor', cost:1.10}
+    ],
+    diagram:(g)=>`
+      <svg viewBox="0 0 560 480" xmlns="http://www.w3.org/2000/svg">
+        <g class="part-hot" data-part="window"><rect x="150" y="24" width="180" height="34" rx="4" fill="#7fd8ff" opacity="0.55" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="41" x2="420" y2="41"/>
+        ${label(420,26,'WINDOW','$0.35')}
+
+        <g class="part-hot" data-part="matrix"><rect x="150" y="72" width="180" height="34" rx="4" fill="#34E6E0" stroke="#0E0619" stroke-width="2"/>
+          ${Array.from({length:9}).map((_,i)=>`<circle cx="${162+i*20}" cy="89" r="3" fill="#0E0619"/>`).join('')}
+        </g>
+        <line class="leader" x1="330" y1="89" x2="420" y2="89"/>
+        ${label(420,74,'LED MATRIX','$1.40')}
+
+        <g class="part-hot" data-part="pcb"><rect x="150" y="120" width="180" height="40" rx="3" fill="#2E1856" stroke="#B9FF6B" stroke-width="2"/>
+          <rect x="215" y="130" width="50" height="20" fill="#0E0619" stroke="#B9FF6B" stroke-width="1.5"/>
+        </g>
+        <line class="leader" x1="330" y1="140" x2="420" y2="140"/>
+        ${label(420,125,'BLE MCU / PCB','$2.10')}
+
+        <g class="part-hot" data-part="battery"><rect x="150" y="174" width="180" height="34" rx="6" fill="#FFD400" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="191" x2="420" y2="191"/>
+        ${label(420,176,'LIPO BATTERY','$0.85')}
+
+        <g class="part-hot" data-part="usbc"><rect x="220" y="216" width="40" height="16" rx="2" fill="#D9DEE8" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="260" y1="224" x2="420" y2="224"/>
+        ${label(420,209,'USB-C PORT','$0.55')}
+
+        <g class="part-hot" data-part="rail"><rect x="150" y="246" width="180" height="22" rx="3" fill="#9AA3B4" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="257" x2="420" y2="257"/>
+        ${label(420,242,'RAIL CONNECTOR','$0.60')}
+
+        <g class="part-hot" data-part="gasket"><rect x="150" y="280" width="180" height="16" rx="8" fill="#FF4FD8" opacity="0.7" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="288" x2="420" y2="288"/>
+        ${label(420,274,'GASKET + BUTTON','$0.25')}
+
+        <g class="part-hot" data-part="shell"><rect x="150" y="308" width="180" height="38" rx="6" fill="#8A5CFF" opacity="0.85" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="327" x2="420" y2="327"/>
+        ${label(420,312,'SHELL BOTTOM','$0.60')}
+
+        <g class="part-hot" data-part="pack"><rect x="150" y="358" width="180" height="30" rx="3" fill="#D9DEE8" opacity="0.35" stroke="#0E0619" stroke-width="2" stroke-dasharray="4 3"/></g>
+        <line class="leader" x1="330" y1="373" x2="420" y2="373"/>
+        ${label(420,358,'PACKAGING','$0.70')}
+
+        <g class="part-hot" data-part="labor"><rect x="150" y="400" width="180" height="26" rx="3" fill="none" stroke="#B9FF6B" stroke-width="2" stroke-dasharray="2 3"/></g>
+        <line class="leader" x1="330" y1="413" x2="420" y2="413"/>
+        ${label(420,398,'ASSEMBLY LABOR','$1.10')}
+      </svg>`
+  },
+  keychain: {
+    label:'Keychain Beacon', msrp:9.00,
+    parts:[
+      {id:'shell', name:'ABS shell, molded-in keyring loop', cost:0.55},
+      {id:'pcb', name:'Minimal PCB + NFC tag', cost:0.90},
+      {id:'battery', name:'CR2032 coin-cell battery', cost:0.15},
+      {id:'led', name:'High-brightness single LED', cost:0.08},
+      {id:'button', name:'Tactile check-in button', cost:0.10},
+      {id:'ring', name:'Keyring hardware', cost:0.12},
+      {id:'pack', name:'Blister card packaging', cost:0.35},
+      {id:'labor', name:'Assembly &amp; QC labor', cost:0.45}
+    ],
+    diagram:(g)=>`
+      <svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg">
+        <g class="part-hot" data-part="ring"><circle cx="180" cy="40" r="16" fill="none" stroke="#D9DEE8" stroke-width="4"/></g>
+        <line class="leader" x1="200" y1="40" x2="420" y2="40"/>
+        ${label(420,25,'KEYRING','$0.12')}
+
+        <g class="part-hot" data-part="shell"><rect x="130" y="70" width="180" height="60" rx="14" fill="#8A5CFF" opacity="0.85" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="310" y1="100" x2="420" y2="100"/>
+        ${label(420,85,'ABS SHELL','$0.55')}
+
+        <g class="part-hot" data-part="pcb"><rect x="150" y="150" width="140" height="34" rx="3" fill="#2E1856" stroke="#B9FF6B" stroke-width="2"/></g>
+        <line class="leader" x1="290" y1="167" x2="420" y2="167"/>
+        ${label(420,152,'MINIMAL PCB + NFC','$0.90')}
+
+        <g class="part-hot" data-part="battery"><circle cx="220" cy="212" r="20" fill="#FFD400" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="240" y1="212" x2="420" y2="212"/>
+        ${label(420,197,'CR2032 CELL','$0.15')}
+
+        <g class="part-hot" data-part="led"><circle cx="220" cy="252" r="7" fill="#34E6E0" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="227" y1="252" x2="420" y2="252"/>
+        ${label(420,238,'STATUS LED','$0.08')}
+
+        <g class="part-hot" data-part="button"><rect x="200" y="270" width="40" height="16" rx="4" fill="#FF4FD8" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="240" y1="278" x2="420" y2="278"/>
+        ${label(420,264,'CHECK-IN BUTTON','$0.10')}
+
+        <g class="part-hot" data-part="pack"><rect x="150" y="304" width="180" height="30" rx="3" fill="#D9DEE8" opacity="0.35" stroke="#0E0619" stroke-width="2" stroke-dasharray="4 3"/></g>
+        <line class="leader" x1="330" y1="319" x2="420" y2="319"/>
+        ${label(420,304,'PACKAGING','$0.35')}
+
+        <g class="part-hot" data-part="labor"><rect x="150" y="346" width="180" height="26" rx="3" fill="none" stroke="#B9FF6B" stroke-width="2" stroke-dasharray="2 3"/></g>
+        <line class="leader" x1="330" y1="359" x2="420" y2="359"/>
+        ${label(420,344,'ASSEMBLY LABOR','$0.45')}
+      </svg>`
+  },
+  bud: {
+    label:'Bud-Charm', msrp:16.00,
+    parts:[
+      {id:'skin', name:'Silicone charm skin (ear-shaped)', cost:0.70},
+      {id:'clip', name:'Magnetic charm clip / mount', cost:0.30},
+      {id:'pcb', name:'BLE "chirp" module on PCB', cost:2.10},
+      {id:'speaker', name:'Micro speaker driver', cost:0.55},
+      {id:'battery', name:'LiPo battery, 30mAh', cost:0.75},
+      {id:'usbc', name:'USB-C charge port', cost:0.35},
+      {id:'pack', name:'Retail packaging', cost:0.40},
+      {id:'labor', name:'Assembly &amp; QC labor', cost:0.55}
+    ],
+    diagram:(g)=>`
+      <svg viewBox="0 0 560 440" xmlns="http://www.w3.org/2000/svg">
+        <g class="part-hot" data-part="skin"><ellipse cx="240" cy="60" rx="95" ry="32" fill="#FF4FD8" opacity="0.6" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="335" y1="60" x2="440" y2="60"/>
+        ${label(440,45,'SILICONE SKIN','$0.70')}
+
+        <g class="part-hot" data-part="clip"><rect x="200" y="100" width="24" height="24" rx="4" fill="#9AA3B4" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="224" y1="112" x2="440" y2="112"/>
+        ${label(440,97,'MAGNETIC CLIP','$0.30')}
+
+        <g class="part-hot" data-part="pcb"><rect x="150" y="140" width="180" height="38" rx="3" fill="#2E1856" stroke="#B9FF6B" stroke-width="2"/></g>
+        <line class="leader" x1="330" y1="159" x2="440" y2="159"/>
+        ${label(440,144,'BLE CHIRP MODULE','$2.10')}
+
+        <g class="part-hot" data-part="speaker"><circle cx="240" cy="212" r="22" fill="#34E6E0" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="262" y1="212" x2="440" y2="212"/>
+        ${label(440,197,'MICRO SPEAKER','$0.55')}
+
+        <g class="part-hot" data-part="battery"><rect x="160" y="252" width="160" height="30" rx="6" fill="#FFD400" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="320" y1="267" x2="440" y2="267"/>
+        ${label(440,252,'LIPO BATTERY','$0.75')}
+
+        <g class="part-hot" data-part="usbc"><rect x="220" y="298" width="40" height="16" rx="2" fill="#D9DEE8" stroke="#0E0619" stroke-width="2"/></g>
+        <line class="leader" x1="260" y1="306" x2="440" y2="306"/>
+        ${label(440,291,'USB-C PORT','$0.35')}
+
+        <g class="part-hot" data-part="pack"><rect x="150" y="330" width="180" height="30" rx="3" fill="#D9DEE8" opacity="0.35" stroke="#0E0619" stroke-width="2" stroke-dasharray="4 3"/></g>
+        <line class="leader" x1="330" y1="345" x2="440" y2="345"/>
+        ${label(440,330,'PACKAGING','$0.40')}
+
+        <g class="part-hot" data-part="labor"><rect x="150" y="372" width="180" height="26" rx="3" fill="none" stroke="#B9FF6B" stroke-width="2" stroke-dasharray="2 3"/></g>
+        <line class="leader" x1="330" y1="385" x2="440" y2="385"/>
+        ${label(440,370,'ASSEMBLY LABOR','$0.55')}
+      </svg>`
+  }
+};
+function label(x,y,name,cost){
+  return `<rect class="part-label-bg" x="${x}" y="${y}" width="130" height="34" rx="2"/>
+    <text class="part-label-txt" x="${x+8}" y="${y+15}">${name}</text>
+    <text class="part-label-cost" x="${x+8}" y="${y+29}">${cost}</text>`;
+}
+
+const labTabs = document.getElementById('labTabs');
+const labPanels = document.getElementById('labPanels');
+const keys = Object.keys(PRODUCTS);
+
+keys.forEach((key, idx)=>{
+  const tab = document.createElement('div');
+  tab.className = 'lab-tab' + (idx===0?' active':'');
+  tab.textContent = PRODUCTS[key].label;
+  tab.dataset.key = key;
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.lab-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.lab-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-'+key).classList.add('active');
+  });
+  labTabs.appendChild(tab);
+
+  const p = PRODUCTS[key];
+  const cogs = p.parts.reduce((s,part)=>s+part.cost,0);
+  const profit = p.msrp - cogs;
+  const margin = (profit / p.msrp * 100);
+
+  const panel = document.createElement('div');
+  panel.className = 'lab-panel' + (idx===0?' active':'');
+  panel.id = 'panel-'+key;
+  panel.innerHTML = `
+    <div class="diagram-shell">${p.diagram()}</div>
+    <div class="ledger">
+      <div class="ledger-head">BILL OF MATERIALS — ${p.label.toUpperCase()}</div>
+      <table>
+        ${p.parts.map(part=>`<tr class="part-row" data-part="${part.id}"><td>${part.name}</td><td class="cost">$${part.cost.toFixed(2)}</td></tr>`).join('')}
+        <tr class="sub"><td>Manufacturing cost (COGS)</td><td class="cost">$${cogs.toFixed(2)}</td></tr>
+      </table>
+      <div class="ledger-readout">
+        <div class="lcd">
+          <div class="readout-row"><span class="lab">Retail price (MSRP)</span><span>$${p.msrp.toFixed(2)}</span></div>
+          <div class="readout-row"><span class="lab">Manufacturing cost</span><span class="dim">$${cogs.toFixed(2)}</span></div>
+          <div class="readout-row total"><span class="lab">Gross profit / unit</span><span>$${profit.toFixed(2)} (${margin.toFixed(1)}%)</span></div>
+          <div class="margin-bar"><span style="width:${margin.toFixed(1)}%;"></span></div>
+        </div>
+        <div class="pair-demo">
+          <div class="lcd" id="pairlog-${key}">
+            <div class="dim">&gt; press pair to simulate...</div>
+          </div>
+          <button class="btn btn-lcd pair-btn" data-pair="${key}">Simulate Pairing With App</button>
+        </div>
+      </div>
+    </div>
+  `;
+  labPanels.appendChild(panel);
+});
+
+// hover/tap sync between diagram parts and ledger rows
+labPanels.addEventListener('mouseover', (e)=>{
+  const hot = e.target.closest('.part-hot');
+  const row = e.target.closest('.part-row');
+  const id = (hot && hot.dataset.part) || (row && row.dataset.part);
+  if(!id) return;
+  const scope = e.target.closest('.lab-panel');
+  scope.querySelectorAll(`[data-part="${id}"]`).forEach(el=>el.classList.add('hot'));
+});
+labPanels.addEventListener('mouseout', (e)=>{
+  const hot = e.target.closest('.part-hot');
+  const row = e.target.closest('.part-row');
+  const id = (hot && hot.dataset.part) || (row && row.dataset.part);
+  if(!id) return;
+  const scope = e.target.closest('.lab-panel');
+  scope.querySelectorAll(`[data-part="${id}"]`).forEach(el=>el.classList.remove('hot'));
+});
+
+// pairing simulation, ties hardware lab back to "the software"
+labPanels.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-pair]');
+  if(!btn) return;
+  const key = btn.dataset.pair;
+  const log = document.getElementById('pairlog-'+key);
+  const name = PRODUCTS[key].label.toUpperCase().replace(/ /g,'-');
+  const lines = [
+    `&gt; SCANNING FOR PALS...`,
+    `&gt; FOUND: ${name}-${Math.floor(Math.random()*90+10)}`,
+    `&gt; PAIRED IN ${(Math.random()*1.5+1.2).toFixed(1)}s`,
+    `&gt; SYNCED TO BOOTUP APP ✓`
+  ];
+  log.innerHTML = '';
+  lines.forEach((l,i)=>{
+    setTimeout(()=>{
+      const d = document.createElement('div');
+      d.innerHTML = l;
+      if(i<lines.length-1) d.className='dim';
+      log.appendChild(d);
+    }, i*380);
+  });
+});
+</script>
+
+</body>
+</html>
